@@ -1,0 +1,2 @@
+-SE agrego el IF ELSE sintaxis linea 91
+-SE agrego el FOR sintaxis linea 112
