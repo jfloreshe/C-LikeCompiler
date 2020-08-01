@@ -24,6 +24,7 @@ int nTS = 0;
 int insertaSimbolo(char *, int);
 int localizaSimbolo(char *);
 void muestraSimbolo();
+void imprimirCadena(char *);
 int tipoVar;
 
 // Definici�n de la tabla de c�digo
@@ -58,7 +59,7 @@ void interprete();
 %}
 
 %token INT FLOAT STRING FORMATO ID IF ELSE NUM REAL CADENA WHILE DO FOR FUNCION
-%token LEENUM IMPRINUM
+%token LEER IMPRIMIR
 %token CENTERO	
 %token CFLOAT	
 %token VAR
@@ -82,10 +83,10 @@ void interprete();
 	
 /*  listaVar : ID ','                       listaVar | ID ; */
 	listaVar : ID ',' { IS(tipoVar,VAR); }	listaVar | ID { IS(tipoVar,VAR); };
-	listaPar : Tipo ID { IS($1,VAR); }',' listaPar   | Tipo ID { IS($1,VAR); };
+	listaPar : Tipo ID { IS($1,VAR); }',' listaPar   | Tipo ID { IS($1,VAR); } | /* Nada */;
 	bloque : '{' listaVarLoc listaProp '}';
 	listaVarLoc : /* Nada */ | Tipo listaVar ';' listaVarLoc ;
-	listaProp : listaProp prop | ;
+	listaProp : /* Nada */ | listaProp prop | listaProp listaVarLoc;
 	prop : ';' ;
 	prop : bloque ;
 
@@ -122,9 +123,9 @@ void interprete();
 																				 	genCodigo(SALTAR,0,0,$10);
 																				};
 	;
-/*  prop : IMPRINUM '(' expr ')' ;  */	
-	prop : IMPRINUM '(' /*FORMATO	{ $$ = nTS; IS(FORMATO,0);} ','*/  expr ')'	{genCodigo(IMPRINUM,$3,0,0);};
-	prop : LEENUM '('ID {$$ = localizaSimbolo(lexema);} ')' {genCodigo(LEENUM,$4,0,0);} ;
+/*  prop : IMPRIMIR '(' expr ')' ;  */	
+	prop : IMPRIMIR '(' /*FORMATO	{ $$ = nTS; IS(FORMATO,0);} ','*/  expr ')'	{genCodigo(IMPRIMIR,$3,0,0);};
+	prop : LEER '('ID {$$ = localizaSimbolo(lexema);} ')' {genCodigo(LEER,$4,0,0);} ;
 	prop : expr ;
 	expr : expr OR expr ;
 	expr : expr AND expr ;
@@ -200,8 +201,8 @@ void muestraCodigo()
 		case SALTARV: printf("SALTARV %s %d \n",TS[a1].nombre,a3);break;
 		case SALTARF: printf("SALTARF %s %d \n",TS[a1].nombre,a3);break;
 		case MOVER: printf("MOVER %s %s \n",TS[a1].nombre,TS[a2].nombre);break;
-		case IMPRINUM: printf("IMPRINUM %s \n",TS[a1].nombre);break;
-		case LEENUM: printf("LEENUM %s \n",TS[a1].nombre);break;
+		case IMPRIMIR: printf("IMPRIMIR %s \n",TS[a1].nombre);break;
+		case LEER: printf("LEER %s \n",TS[a1].nombre);break;
 		case SUMAR: printf("SUMAR %s = %s + %s\n",TS[a1].nombre,TS[a2].nombre,TS[a3].nombre);break;
 		case RESTAR      : printf("RESTAR %s = %s - %s\n",TS[a1].nombre,TS[a2].nombre,TS[a3].nombre);break;
 		case MULTIPLICAR : printf("MULTIPLICAR %s = %s * %s\n", TS[a1].nombre,TS[a2].nombre,TS[a3].nombre); break;
@@ -243,6 +244,30 @@ void muestraSimbolo()
 		printf("%20s %d %d %g\n",pTS->nombre,pTS->a1,pTS->a2,pTS->a3.real);
 } 
 
+void imprimirCadena(char *str){
+	char *character;
+	character = str;
+	char value;
+	int i =0;
+	while(*character != '\0'){
+		if(str[i] == '\\'){
+			++i;
+			if(str[i] == 'n'){
+				printf("\n");
+			}
+			else if(str[i] == 't'){
+				printf("\t");
+			}
+			else
+				printf("%c",str[--i]);
+		}
+		else
+			printf("%c",str[i]);
+		i++;
+		character++;
+	}
+}
+
 
 int yylex()
 //TODO FIX HOW IT gets everything
@@ -267,8 +292,8 @@ int yylex()
       if (strcmp(lexema,"while")==0) return WHILE;
       if (strcmp(lexema,"for")==0) return FOR;
       if (strcmp(lexema,"do")==0) return DO;
-      if (strcmp(lexema,"print")==0) return IMPRINUM;
-	  if (strcmp(lexema,"read")==0) return LEENUM;
+      if (strcmp(lexema,"print")==0) return IMPRIMIR;
+	  if (strcmp(lexema,"read")==0) return LEER;
       if (strcmp(lexema,"chao")==0) {		  
 		  return EOF;							
 	  }
@@ -371,17 +396,17 @@ void interprete(){
 				else break;
 		case SALTARV : if(TS[a1].a3.entero) { icx = a3; continue;}
 				else break;
-		case IMPRINUM : if(TS[a1].a1==INT){
+		case IMPRIMIR : if(TS[a1].a1==INT){
 							printf("%d\n",TS[a1].a3.entero);
 						}
 						else if(TS[a1].a1==FLOAT){
 							printf("%f\n",TS[a1].a3.real);
 						}
 						else if(TS[a1].a1==STRING){
-							printf("%s\n",TS[a1].a3.cadena);
+							imprimirCadena(TS[a1].a3.cadena);
 						}
 			 break;
-		case LEENUM :   
+		case LEER :   
 						if(TS[a1].a1 == INT){
 							scanf(" %d", &entrada.entero);
 							TS[a1].a3.entero = entrada.entero;
@@ -390,7 +415,10 @@ void interprete(){
 							scanf(" %f", &entrada.real);
 							TS[a1].a3.real = entrada.real;
 						}					
-										
+						else if(TS[a1].a1 == STRING){
+							scanf("%s",&entrada.cadena);
+							strcpy(TS[a1].a3.cadena,&entrada.cadena);
+						}
 						break;
 		case MOVER : 
 					if(TS[a1].a1 == INT){
@@ -408,6 +436,10 @@ void interprete(){
 					else if(TS[a1].a1 == STRING){
 						if(TS[a2].a1 == STRING)
 							strcpy(TS[a1].a3.cadena,TS[a2].a3.cadena);
+						else if(TS[a2].a1 == INT)
+							snprintf(TS[a1].a3.cadena,30,"%d",TS[a2].a3.entero);
+						else if(TS[a2].a1 == FLOAT)
+							snprintf(TS[a1].a3.cadena,30,"%f",TS[a2].a3.real);
 					}
 					break;
 		case SUMAR : 
@@ -620,7 +652,6 @@ void interprete(){
 	}  //Fin de funcion
 	
 main(int argc, char *argv[])  {
-	char entrada;
 	yyparse();
 	muestraSimbolo();
 	muestraCodigo();
