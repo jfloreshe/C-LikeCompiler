@@ -1,0 +1,43 @@
+called yylex
+int
+called yylex
+main
+called yylex
+main
+called yylex
+int
+called yylex
+x
+called yylex
+x
+called yylex
+x
+called yylex
+int
+called yylex
+n
+called yylex
+n
+called yylex
+read
+called yylex
+read
+called yylex
+n
+called yylex
+n
+called yylex
+n
+called yylex
+n
+called yylex
+chao
+eof reached= -1
+int=258,float=259
+                main 258 269 0
+                   x 258 274 0
+                   n 258 274 0
+ 0) LEENUM n 
+Programa en ejecuci�n: 
+inserte su dato
+bufferEntrada: 0
