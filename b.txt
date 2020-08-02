@@ -1,43 +1,116 @@
-called yylex
-int
-called yylex
-main
-called yylex
-main
-called yylex
-int
-called yylex
-x
-called yylex
-x
-called yylex
-x
-called yylex
-int
-called yylex
-n
-called yylex
-n
-called yylex
-read
-called yylex
-read
-called yylex
-n
-called yylex
-n
-called yylex
-n
-called yylex
-n
-called yylex
-chao
-eof reached= -1
-int=258,float=259
-                main 258 269 0
-                   x 258 274 0
-                   n 258 274 0
- 0) LEENUM n 
+indice 0, new var temp _T4
+indice 277, new var temp _T13
+indice 277, new var temp _T14
+indice 277, new var temp _T15
+int=258,float=259,string=260
+         sumardosint 258 271 0
+                   x 258 277 0
+                   j 258 277 0
+                suma 258 277 0
+                 _T4 259 277 0
+           fibonnaci 258 271 0
+          nfibonacci 258 277 0
+          ifibonacci 258 277 0
+          jfibonacci 258 277 0
+          tfibonacci 258 277 0
+          kfibonacci 258 277 0
+                   0 258 277 0
+                   1 258 277 1.4013e-45
+                _T13 259 277 0
+                _T14 259 277 0
+                _T15 259 277 0
+                main 258 271 0
+                   n 258 277 0
+              answer 258 277 0
+                   i 258 277 0
+                   5 258 277 7.00649e-45
+ 0) SALTARV sumardosint 0 
+ 1) SUMAR _T4 = x + j
+ 2) MOVER suma _T4 
+ 3) MOVER sumardosint suma 
+ 4) RETURN
+ 5) SALTARV fibonnaci 0 
+ 6) MOVER ifibonacci 0 
+ 7) MOVER jfibonacci 1 
+ 8) MOVER kfibonacci 1 
+ 9) MENOR _T13 = kfibonacci < nfibonacci
+10) SALTARV _T13 15 
+11) SALTARF _T13 20 
+12) SUMAR _T14 = kfibonacci + 1
+13) MOVER kfibonacci _T14 
+14) SALTAR 9
+15) SUMAR _T15 = ifibonacci + jfibonacci
+16) MOVER tfibonacci _T15 
+17) MOVER ifibonacci jfibonacci 
+18) MOVER jfibonacci tfibonacci 
+19) SALTAR 12
+20) IMPRIMIR jfibonacci 
+21) MOVER fibonnaci jfibonacci 
+22) RETURN
+23) SALTARV main 0 
+24) MOVER n 5 
+25) MOVER nfibonacci n 
+26) SALTARYREGRESAR inicio 6, final 22, regresar a 27
+27) MOVER answer fibonnaci 
+28) IMPRIMIR answer 
 Programa en ejecuci�n: 
-inserte su dato
-bufferEntrada: 0
+en ejecucion codigo 0
+en ejecucion codigo 5
+en ejecucion codigo 23
+en ejecucion codigo 24
+en ejecucion codigo 25
+en ejecucion codigo 26
+en ejecucion codigo 6
+en ejecucion codigo 7
+en ejecucion codigo 8
+en ejecucion codigo 9
+en ejecucion codigo 10
+en ejecucion codigo 15
+en ejecucion codigo 16
+en ejecucion codigo 17
+en ejecucion codigo 18
+en ejecucion codigo 19
+en ejecucion codigo 12
+en ejecucion codigo 13
+en ejecucion codigo 14
+en ejecucion codigo 9
+en ejecucion codigo 10
+en ejecucion codigo 15
+en ejecucion codigo 16
+en ejecucion codigo 17
+en ejecucion codigo 18
+en ejecucion codigo 19
+en ejecucion codigo 12
+en ejecucion codigo 13
+en ejecucion codigo 14
+en ejecucion codigo 9
+en ejecucion codigo 10
+en ejecucion codigo 15
+en ejecucion codigo 16
+en ejecucion codigo 17
+en ejecucion codigo 18
+en ejecucion codigo 19
+en ejecucion codigo 12
+en ejecucion codigo 13
+en ejecucion codigo 14
+en ejecucion codigo 9
+en ejecucion codigo 10
+en ejecucion codigo 15
+en ejecucion codigo 16
+en ejecucion codigo 17
+en ejecucion codigo 18
+en ejecucion codigo 19
+en ejecucion codigo 12
+en ejecucion codigo 13
+en ejecucion codigo 14
+en ejecucion codigo 9
+en ejecucion codigo 10
+en ejecucion codigo 11
+en ejecucion codigo 20
+5
+en ejecucion codigo 21
+en ejecucion codigo 22
+en ejecucion codigo 27
+en ejecucion codigo 28
+5
+en ejecucion codigo 29

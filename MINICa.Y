@@ -13,18 +13,23 @@ typedef union { int entero;
 		char cadena[30];
 		} tipovalor;
 void IS(int , int);
+void IBP(int );
+void asignarParametros(int);
 char lexema[80];
 typedef struct {char nombre[30];
-		int a1,a2;  	// a1: INT/FLOAT	a2: FUN/VAR
+		int a1,a2,a4,a5,a6;  	// a1: INT/FLOAT	a2: FUN/VAR		a4: inicio de FUN a5:fin de FUN a6:nro parametros en FUN
 		tipovalor a3; 	// guarda valor
 	} tipoTablaSimbolo;
 
 tipoTablaSimbolo TS[100], *pTS;
 int nTS = 0;
+int bufferParametros[100];
+int iBP = -1;//indiceactual del buffer de parametros
 int insertaSimbolo(char *, int);
 int localizaSimbolo(char *);
 void muestraSimbolo();
 void imprimirCadena(char *);
+int encontrarFuncionAsociada();
 int tipoVar;
 
 // Definici�n de la tabla de c�digo
@@ -53,12 +58,11 @@ void interprete();
 #define MULTIPLICAR  8
 #define DIVIDIR      9
 #define MAYOR 		10
-
-
+#define SALTARYREGRESAR 11
 
 %}
 
-%token INT FLOAT STRING FORMATO ID IF ELSE NUM REAL CADENA WHILE DO FOR FUNCION
+%token INT FLOAT STRING FORMATO ID IF ELSE NUM REAL CADENA WHILE DO FOR FUNCION RETURN
 %token LEER IMPRIMIR
 %token CENTERO	
 %token CFLOAT	
@@ -78,12 +82,14 @@ void interprete();
 	listaDeclC : listaDeclC declC | ;
 	declC : Tipo listaVar ';';
 /*  declC : Tipo ID '('                     listaPar ')' bloque; */
-	declC : Tipo ID '(' { IS($1,FUNCION);}	listaPar ')' bloque;
+	declC : Tipo ID '(' { IS($1,FUNCION); $$=localizaSimbolo(lexema);} listaPar ')' {genCodigo(SALTARV,$4,0,0);} 
+	 {TS[$4].a4=cx+1;TS[$4].a6 = nTS - $4 -1;;$$=cx+1;} bloque{ TS[$4].a5=cx;$$=cx;};
 	Tipo : INT  | FLOAT | STRING;
 	
 /*  listaVar : ID ','                       listaVar | ID ; */
 	listaVar : ID ',' { IS(tipoVar,VAR); }	listaVar | ID { IS(tipoVar,VAR); };
 	listaPar : Tipo ID { IS($1,VAR); }',' listaPar   | Tipo ID { IS($1,VAR); } | /* Nada */;
+	listaParCall : expr{IBP($1);}',' listaParCall | expr {IBP($1);IBP(-1);} | /*Nada*/;
 	bloque : '{' listaVarLoc listaProp '}';
 	listaVarLoc : /* Nada */ | Tipo listaVar ';' listaVarLoc ;
 	listaProp : /* Nada */ | listaProp prop | listaProp listaVarLoc;
@@ -154,6 +160,10 @@ void interprete();
 					$$ = localizaSimbolo(lexema);					
 					strcpy(TS[$$].a3.cadena,lexema);
 					};
+	expr : FUNCION {$$ = localizaSimbolo(lexema);} '('listaParCall')' {asignarParametros($2);}
+	
+		{genCodigo(SALTARYREGRESAR, TS[$2].a4,TS[$2].a5,cx+2); $$=$2;};
+	expr : RETURN expr {int n,n2; n=encontrarFuncionAsociada(); n2 = localizaSimbolo(lexema);genCodigo(MOVER,n,n2,0); genCodigo(RETURN,0,0,0);};
 	expr : ID '=' { $$ = localizaSimbolo(lexema); }	expr {genCodigo(MOVER,$3,$4,0);};	/* Codigo 3 */
 	expr : ID '[' expr ']' ;
 	expr : ID '[' expr ']' '=' expr;
@@ -175,7 +185,7 @@ void genCodigo(int op,int a1,int a2,int a3)
 int genvartemp()
 {
 	char t[30];
-	sprintf(t,"_T%-2d",indicevartemp++);
+	sprintf(t,"_T%d",nTS);
 	strcpy(TS[nTS].nombre,t);
 	TS[nTS].a1 = FLOAT;
 	TS[nTS].a2 = VAR;
@@ -197,7 +207,8 @@ void muestraCodigo()
 		case MAYORIGUAL: printf("MAYORIGUAL %s = %s >= %s\n",TS[a1].nombre,TS[a2].nombre,TS[a3].nombre);break;
 		case IGUAL: printf("IGUAL %s = %s == %s\n",TS[a1].nombre,TS[a2].nombre,TS[a3].nombre);break;
 		case NOIGUAL: printf("NOIGUAL %s = %s != %s\n",TS[a1].nombre,TS[a2].nombre,TS[a3].nombre);break;
-		case SALTAR: printf("SALTAR %d \n",a3);break;
+		case SALTARYREGRESAR: printf("SALTARYREGRESAR inicio %d, final %d, regresar a %d\n",a1,a2,a3);break;
+		case SALTAR: printf("SALTAR %d\n",a3);break;
 		case SALTARV: printf("SALTARV %s %d \n",TS[a1].nombre,a3);break;
 		case SALTARF: printf("SALTARF %s %d \n",TS[a1].nombre,a3);break;
 		case MOVER: printf("MOVER %s %s \n",TS[a1].nombre,TS[a2].nombre);break;
@@ -207,6 +218,7 @@ void muestraCodigo()
 		case RESTAR      : printf("RESTAR %s = %s - %s\n",TS[a1].nombre,TS[a2].nombre,TS[a3].nombre);break;
 		case MULTIPLICAR : printf("MULTIPLICAR %s = %s * %s\n", TS[a1].nombre,TS[a2].nombre,TS[a3].nombre); break;
 		case DIVIDIR     : printf("DIVIDIR %s = %s / %s\n",TS[a1].nombre,TS[a2].nombre,TS[a3].nombre);break;
+		case RETURN		 : printf("RETURN\n");
 		
 		// Los dem�s casos
 		}
@@ -225,8 +237,24 @@ int insertaSimbolo(char *n, int t)
 	if(localizaSimbolo(n)>=0) return -1;
 	strcpy(TS[nTS].nombre,n);
 	TS[nTS].a1 = t;
-	TS[nTS].a2 = TS[nTS].a3.real = 0;
+	TS[nTS].a2 = TS[nTS].a3.real = TS[nTS].a4 = 0;
 	return nTS++;	
+}
+void IBP(int isimbolo){
+	bufferParametros[++iBP] = isimbolo;
+}
+void asignarParametros(int ifuncion){
+	
+	if(TS[ifuncion].a6 != iBP){
+		yyerror("parametros fuera de rango");
+	}
+	int iParametro = ifuncion + 1;
+	for(int i = 0; i < iBP; ++i){
+		int simboloEnBuffer = bufferParametros[i];
+		genCodigo(MOVER,iParametro,simboloEnBuffer,0);
+		iParametro++;
+	}
+	iBP = -1;
 }
 void IS(int tipo,int clase)
 {
@@ -244,6 +272,14 @@ void muestraSimbolo()
 		printf("%20s %d %d %g\n",pTS->nombre,pTS->a1,pTS->a2,pTS->a3.real);
 } 
 
+int encontrarFuncionAsociada(){
+	int i;
+	for(i=nTS-1; i>=0 ; --i){
+		if(TS[i].a2 == FUNCION)
+			break;
+	}
+	return i;
+}
 void imprimirCadena(char *str){
 	char *character;
 	character = str;
@@ -283,7 +319,12 @@ int yylex()
 	  while (isalpha(c));
 	  ungetc(c,stdin);
 	  *p=0;
-
+	  int simboloPos = localizaSimbolo(lexema);
+	  if(simboloPos >= 0){
+		  if(TS[simboloPos].a2 == FUNCION){
+		  	return FUNCION;
+		  }	
+	  }
       if (strcmp(lexema,"if")==0) return IF;
       if (strcmp(lexema,"else")==0) return ELSE;
       if (strcmp(lexema,"int")==0) return tipoVar=yylval=INT;
@@ -294,6 +335,7 @@ int yylex()
       if (strcmp(lexema,"do")==0) return DO;
       if (strcmp(lexema,"print")==0) return IMPRIMIR;
 	  if (strcmp(lexema,"read")==0) return LEER;
+	  if (strcmp(lexema,"return")==0) return RETURN;
       if (strcmp(lexema,"chao")==0) {		  
 		  return EOF;							
 	  }
@@ -361,7 +403,6 @@ int yylex()
 		p=lexema;
 		do {c=getchar(); *p++=c;} while(c!='"');
 		*(p-1)=0;
-		printf("%s",lexema);
 		return yylval = CADENA;
 	}	
     yyerror("��� caracter ilegal !!!");
@@ -375,8 +416,12 @@ yyerror(char *m)  {
 
 void interprete(){
 	int icx,op,a1,a2,a3;
-	FILE *tty;
 	tipovalor entrada;
+	int enSaltarRegresar = 0;
+	//usar como un stack para poder utilizar con funciones nested 
+	int numeroOperacionesParaRegresar = 0;
+	int regresarA = -1;
+	FILE *tty;	
 	tty = freopen("/dev/tty", "r", stdin);
 	if (tty == NULL) {
 		perror("Unable to open terminal for reading");
@@ -389,13 +434,46 @@ void interprete(){
 		a1 = TABCOD[icx].a1;
 		a2 = TABCOD[icx].a2;
 		a3 = TABCOD[icx].a3;
+
 		switch(op)
 		{
-		case SALTAR : icx = a3; continue;
+		case RETURN :
+			if(enSaltarRegresar){
+				numeroOperacionesParaRegresar = 0;
+				icx = regresarA;
+				regresarA = -1;
+				enSaltarRegresar = 0;
+				continue;
+			}
+			break;
+		case SALTARYREGRESAR :
+			enSaltarRegresar = 1;
+			numeroOperacionesParaRegresar = a2 - a1 
+			+1;
+			regresarA = a3;
+			icx = a1;
+			continue;
+		case SALTAR :	
+						icx = a3; 
+						continue;
 		case SALTARF : if(!TS[a1].a3.entero) { icx = a3; continue;}
 				else break;
-		case SALTARV : if(TS[a1].a3.entero) { icx = a3; continue;}
-				else break;
+		case SALTARV : 
+				if(TS[a1].a2 == VAR){
+					if(TS[a1].a3.entero) { 
+						icx = a3; continue;
+					}
+					else break;
+				}
+				else if(TS[a1].a2 == FUNCION){
+					if(strcmp(TS[a1].nombre,"main")!=0){
+						icx = TS[a1].a5 +1;
+						continue;
+					}
+					else if (strcmp(TS[a1].nombre,"main")==0){
+						break;
+					}
+				}
 		case IMPRIMIR : if(TS[a1].a1==INT){
 							printf("%d\n",TS[a1].a3.entero);
 						}
